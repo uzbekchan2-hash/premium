@@ -7,24 +7,25 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 from pyrogram import Client, filters
 
-# Logging
+# Logging sozlamasi
 logging.basicConfig(level=logging.INFO)
 
-# --- ENVIRONMENT VARIABLES (Render'dan olinadi) ---
+# --- RENDER ENVIRONMENT VARIABLES (Muhit o'zgaruvchilari) ---
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
 API_ID = int(os.getenv("API_ID", 0)) if os.getenv("API_ID") else None
 API_HASH = os.getenv("API_HASH")
 SESSION_STRING = os.getenv("SESSION_STRING")
 
+# Webhook manzili
 WEBHOOK_PATH = f"/webhook/{BOT_TOKEN}"
 WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}{WEBHOOK_PATH}" if RENDER_EXTERNAL_URL else None
 
-# Aiogram Bot
+# Aiogram Bot obyekti
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Pyrogram Userbot (Shaxsiy akkaunt)
+# Pyrogram Userbot obyekti (Shaxsiy akkaunt uchun)
 userbot = None
 if API_ID and API_HASH and SESSION_STRING:
     userbot = Client(
@@ -34,18 +35,19 @@ if API_ID and API_HASH and SESSION_STRING:
         session_string=SESSION_STRING
     )
 
-# ----------------- USERBOT (SHAXSIY AKKAUNT) ----------------- #
+# ----------------- USERBOT (SHAXSIY AKKAUNT) MANTIQI ----------------- #
 
-autojavob_active = False
+autojavob_active = False  # Autojavob holati (yoqilgan/o'chirilgan)
 
 if userbot:
+    # Akkauntga kelgan shaxsiy xabarlarga avtomatik javob berish
     @userbot.on_message(filters.private & ~filters.me)
     async def auto_reply(client, message):
         global autojavob_active
         if autojavob_active:
-            await message.reply("Assalomu alaykum! Hozir bandman, tez orada javob beraman.")
+            await message.reply("Assalomu alaykum! Hozir bandman, tez orada javob beraman (Avto-javob).")
 
-# ----------------- BOT KLAVIATURALARI ----------------- #
+# ----------------- TELEGRAM BOT KLAVIATURALARI ----------------- #
 
 def main_menu():
     kb = [
@@ -68,7 +70,7 @@ def back_to_ai_menu():
     ]
     return InlineKeyboardMarkup(inline_keyboard=kb)
 
-# ----------------- HANDLERLAR ----------------- #
+# ----------------- BOT HANDLERLARI (BUYRUQLAR) ----------------- #
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -98,12 +100,13 @@ async def toggle_autojavob_handler(call: CallbackQuery):
 async def send_autoxabar_handler(call: CallbackQuery):
     if not userbot:
         await call.message.edit_text(
-            "❌ Userbot sozlanmagan! API_ID, API_HASH va SESSION_STRING kiritilganini tekshiring.",
+            "❌ Userbot ulangan emas! API_ID, API_HASH va SESSION_STRING kiritilganini tekshiring.",
             reply_markup=back_to_ai_menu()
         )
         return
 
     try:
+        # Shaxsiy akkauntingiz orqali Saqlangan xabarlar (Saved Messages)ga test xabar yuborish
         await userbot.send_message("me", "📢 **Autoxabar:** AI Yordamchi sinov xabari!")
         await call.message.edit_text(
             "✅ Akkauntingiz (Saved Messages)ga autoxabar yuborildi!",
@@ -115,14 +118,14 @@ async def send_autoxabar_handler(call: CallbackQuery):
             reply_markup=back_to_ai_menu()
         )
 
-# ----------------- SERVER VA WEBHOOK ----------------- #
+# ----------------- SERVER VA WEBHOOK SOZLAMALARI ----------------- #
 
 async def on_startup(app):
     if WEBHOOK_URL:
         await bot.set_webhook(WEBHOOK_URL)
     if userbot:
         await userbot.start()
-        logging.info("Userbot ishga tushdi!")
+        logging.info("Userbot (shaxsiy akkaunt) muvaffaqiyatli ishga tushdi!")
 
 async def on_shutdown(app):
     await bot.delete_webhook()
